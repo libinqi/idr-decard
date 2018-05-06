@@ -135,42 +135,53 @@ void DCRead::execute()
 {
 	Receiver receiver;
 
-	unsigned short tagTypeATQA;
-	if (dc_request(icdev, 0, &tagTypeATQA) == 0)
+	if (dc_find_i_d(icdev) == 0)
 	{
-		unsigned int cardsnr;
-		if (dc_find_i_d(icdev) == 0)
-		{
-			receiver.type = ReceiveType::IDCard;
+		receiver.type = ReceiveType::IDCard;
 
-			// if (result)
-			// {
-			// 	doReceive(receiver);
-			// }
-			// else
-			// {
-			// 	doError(0, GBKToUTF8("读取身份证信息错误!"));
-			// }
+		if (dc_start_i_d(icdev) < 0)
+		{
+			doError(0, GBKToUTF8("读取身份证信息错误!"));
 		}
 		else
 		{
-			if (dc_card(icdev, 0, &cardsnr) == 0)
-			{
-				dc_halt(icdev);
+			strcpy(receiver.name, dc_i_d_query_name(icdev));
+			strcpy(receiver.gender, dc_i_d_query_sex(icdev));
+			strcpy(receiver.folk, dc_i_d_query_nation(icdev));
+			strcpy(receiver.birthDay, dc_i_d_query_birth(icdev));
+			strcpy(receiver.code, dc_i_d_query_id_number(icdev));
+			strcpy(receiver.address, dc_i_d_query_address(icdev));
+			strcpy(receiver.agency, dc_i_d_query_department(icdev));
 
-				receiver.type = ReceiveType::ICCard;
-				sprintf(receiver.code, "%2X", cardsnr);
+			std::string expireDay = dc_i_d_query_expire_day(icdev);
+			expireDay.substr(0, 8).copy(receiver.expireStart, 8, 0);
+			expireDay.substr(8, 8).copy(receiver.expireEnd, 8, 0);
 
-				std::string cardIdStr = receiver.code;
-				cardIdStr = cardIdStr.substr(6, 2) + cardIdStr.substr(4, 2) + cardIdStr.substr(2, 2) + cardIdStr.substr(0, 2);
-				cardIdStr.copy(receiver.code, 8, 0);
+			dc_i_d_query_photo_file(icdev, "c:\\photo.jpg");
+			dc_end_i_d(icdev);
 
-				doReceive(receiver);
-			}
-
-			Sleep(10);
+			doReceive(receiver);
 		}
 	}
+	else
+	{
+		unsigned int cardsnr;
+		if (dc_card(icdev, 0, &cardsnr) == 0)
+		{
+			dc_halt(icdev);
+
+			receiver.type = ReceiveType::ICCard;
+			sprintf(receiver.code, "%2X", cardsnr);
+
+			std::string cardIdStr = receiver.code;
+			cardIdStr = cardIdStr.substr(6, 2) + cardIdStr.substr(4, 2) + cardIdStr.substr(2, 2) + cardIdStr.substr(0, 2);
+			cardIdStr.copy(receiver.code, 8, 0);
+
+			doReceive(receiver);
+		}
+	}
+
+	Sleep(10);
 }
 
 void InitAll(Handle<Object> exports)
