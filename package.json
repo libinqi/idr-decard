@@ -1,6 +1,6 @@
 {
   "name": "idr-decard",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "decard ID&IC Card sdk for node addon",
   "main": "index.js",
   "gypfile": true,
